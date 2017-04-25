@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Pixel Editor</title>
+    <style media="screen">
+      #background {
+        position: relative;
+        display: block;
+        margin: 20px auto;
+        background-size: cover;
+      }
+      #canvas {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+      #preview {
+        width: 50px;
+        height: 50px;
+        margin: 20px auto;
+      }
+    </style>
+  </head>
+  <body>
+    <input id="color-input" value="red"/>
+    <input id="bg-input" value="https://static.giantbomb.com/uploads/original/0/1520/2443069-elite.jpg"/>
+    <div id="preview"></div>
+    <button type="button" id="undo">Undo</button>
+    <div id="background">
+      <canvas id="canvas"></canvas>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+      var $ = function (selector) {
+        return document.querySelectorAll(selector);
+      };
+      // SET UP CANVAS
+      var canvas = $('#canvas')[0];
+      var bg = $('#background')[0];
+      var ctx = canvas.getContext("2d")
+      var options = {
+        size: {
+          width: 1000,
+          height: 600
+        },
+        numPixels: {
+          width: 200,
+          height: 100
+        },
+        currentColor: "red"
+      };
+      bg.style.width = options.size.width + "px";
+      bg.style.height = options.size.height + "px";
+      canvas.width = options.size.width;
+      canvas.height = options.size.height;
+      var pixelSize = options.size.height / options.numPixels.height;
+
+      var grid = new Array(options.numPixels.height);
+      var prevStates = []
+      grid.fill(null)
+      grid.forEach(function (_, idx) {
+        grid[idx] = new Array(options.numPixels.width);
+        grid[idx].fill(null);
+      });
+
+      function set(pos, val) {
+        prevStates.push(grid.map(function (row) { return row.slice(); }));
+        grid[pos[0]][pos[1]] = val;
+      }
+
+      function undo() {
+        if (prevStates.length > 0) grid = prevStates.pop();
+        draw()
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, options.size.width, options.size.height);
+        for (var x = 0; x < grid.length; x++) {
+          const row = grid[x];
+          for (var y = 0; y < row.length; y++) {
+            const color = row[y];
+            ctx.fillStyle = color;
+            if (!color) continue;
+            ctx.fillRect(
+              x * pixelSize,
+              y * pixelSize,
+              pixelSize,
+              pixelSize
+            );
+          }
+        }
+        console.log((grid));
+      }
+
+      canvas.addEventListener("click", function (e) {
+        // console.log(e.offsetX, e.offsetY);
+        var pos = [
+          Math.floor(e.offsetX / pixelSize),
+          Math.floor(e.offsetY / pixelSize)
+        ];
+        console.log(pos);
+        set(pos, options.currentColor)
+        draw()
+      });
+
+      // SET UP COLOR PICKER
+      var input = $('#color-input')[0];
+      var preview = $('#preview')[0];
+      input.addEventListener('input', function (e) {
+        var color = e.currentTarget.value;
+        options.currentColor = preview.style.backgroundColor = color;
+      });
+      preview.style.backgroundColor = options.currentColor;
+
+      // SET UP BACKGROUND PICKER
+      var bgInput = $('#bg-input')[0];
+      bgInput.addEventListener('input', function (e) {
+        bg.style.backgroundImage = 'url(' + e.currentTarget.value + ')';
+      });
+      bg.style.backgroundImage = 'url(https://static.giantbomb.com/uploads/original/0/1520/2443069-elite.jpg)';
+
+      // SET UP UNDO
+      var input = $('#undo')[0];
+      input.addEventListener('click', undo);
+      preview.style.backgroundColor = options.currentColor;
+    });
+  </script>
+</html>
